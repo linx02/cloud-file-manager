@@ -1,7 +1,6 @@
 package org.linx.cli;
 
-import org.linx.exception.ProjectNotFoundException;
-import org.linx.service.ProjectService;
+import org.linx.service.DatabaseService;
 import picocli.CommandLine;
 
 import java.util.List;
@@ -9,7 +8,7 @@ import java.util.List;
 @CommandLine.Command(name = "upload", description = "Upload a file")
 public class UploadCommand implements Runnable {
 
-    ProjectService projectService = new ProjectService();
+    DatabaseService databaseService = new DatabaseService();
 
     @CommandLine.Option(names = {"-p" , "--project"}, required = true, description = "Project name")
     private String projectName;
@@ -22,15 +21,22 @@ public class UploadCommand implements Runnable {
 
     @Override
     public void run() {
+        if (!databaseService.projectExists(projectName)) {
+            System.out.println("Project does not exist");
+            return;
+        }
+
         try {
-            List<String> files = projectService.getFilesFromProject(projectName);
+            List<String> files = databaseService.listFiles(projectName);
 
             if (files.contains(fileName)) {
                 System.out.println("File already exists in project");
                 return;
             }
-        } catch (ProjectNotFoundException e) {
-            System.out.println(e.getMessage());
+
+            // IMPLEMENT ME
+            System.out.println("Uploading file " + fileName);
+
         } catch (Exception e) {
             System.out.println("Error uploading file: " + e.getMessage());
         }

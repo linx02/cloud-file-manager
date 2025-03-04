@@ -1,7 +1,6 @@
 package org.linx.cli;
 
-import org.linx.exception.ProjectNotFoundException;
-import org.linx.service.ProjectService;
+import org.linx.service.DatabaseService;
 import picocli.CommandLine;
 
 import java.util.List;
@@ -9,7 +8,7 @@ import java.util.List;
 @CommandLine.Command(name = "download", description = "Download a file")
 public class DownloadCommand implements Runnable {
 
-    ProjectService projectService = new ProjectService();
+    DatabaseService databaseService = new DatabaseService();
 
     @CommandLine.Option(names = {"-p" , "--project"}, required = true, description = "Project name")
     private String projectName;
@@ -19,12 +18,24 @@ public class DownloadCommand implements Runnable {
 
     @Override
     public void run() {
+        if (!databaseService.projectExists(projectName)) {
+            System.out.println("Project does not exist");
+            return;
+        }
+
         try {
-            List<String> files = projectService.getFilesFromProject(projectName);
-        } catch (ProjectNotFoundException e) {
-            System.out.println(e.getMessage());
+            List<String> files = databaseService.listFiles(projectName);
+
+            if (!files.contains(fileName)) {
+                System.out.println("File does not exist in project");
+                return;
+            }
+
+            // IMPLEMENT ME
+            System.out.println("Downloading file " + fileName);
+
         } catch (Exception e) {
-            System.out.println("Error deleting file: " + e.getMessage());
+            System.out.println("Error downloading file: " + e.getMessage());
         }
     }
 }

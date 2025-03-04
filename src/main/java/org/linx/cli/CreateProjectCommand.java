@@ -1,6 +1,6 @@
 package org.linx.cli;
 
-import org.linx.service.ProjectService;
+import org.linx.service.DatabaseService;
 import picocli.CommandLine;
 
 import java.util.List;
@@ -8,16 +8,15 @@ import java.util.List;
 @CommandLine.Command(name = "create-project", description = "Create a new project")
 public class CreateProjectCommand implements Runnable {
 
-    ProjectService projectService = new ProjectService();
+    DatabaseService databaseService = new DatabaseService();
 
     @CommandLine.Option(names = {"-p" , "--project"}, required = true, description = "Project name")
     private String projectName;
 
     @Override
     public void run() {
-        List<String> projects = projectService.getProjects();
-        if (projects.contains(projectName)) {
-            System.out.println("Project " + projectName + " already exists");
+        if (databaseService.projectExists(projectName)) {
+            System.out.println("Project already exists");
             return;
         }
 

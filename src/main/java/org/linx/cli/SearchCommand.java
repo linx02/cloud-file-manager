@@ -1,7 +1,6 @@
 package org.linx.cli;
 
-import org.linx.exception.ProjectNotFoundException;
-import org.linx.service.ProjectService;
+import org.linx.service.DatabaseService;
 import picocli.CommandLine;
 
 import java.util.ArrayList;
@@ -10,7 +9,7 @@ import java.util.List;
 @CommandLine.Command(name = "search", description = "Search for a file")
 public class SearchCommand implements Runnable {
 
-    ProjectService projectService = new ProjectService();
+    DatabaseService databaseService = new DatabaseService();
 
     @CommandLine.Option(names = {"-p" , "--project"}, required = false, description = "Project name")
     private String projectName;
@@ -25,18 +24,18 @@ public class SearchCommand implements Runnable {
 
         if (projectName != null) {
             try {
-                files = projectService.getFilesFromProject(projectName);
-            } catch (ProjectNotFoundException e) {
-                System.out.println(e.getMessage());
+                files = databaseService.listFiles(projectName);
             } catch (Exception e) {
                 System.out.println("Error searching for file: " + e.getMessage());
             }
         }
 
-        List<String> projects = projectService.getProjects();
+        List<String> projects = databaseService.getProjects();
         for (String project : projects) {
             try {
-                files = projectService.getFilesFromProject(project);
+                files = databaseService.listFiles(project);
+
+                // IMPLEMENT ME
             } catch (Exception e) {
                 System.out.println("Error searching for file: " + e.getMessage());
             }
