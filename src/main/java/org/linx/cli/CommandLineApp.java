@@ -13,8 +13,7 @@ import org.linx.cli.*;
                 UploadCommand.class,
                 DownloadCommand.class,
                 ListCommand.class,
-                SearchCommand.class,
-                DeleteCommand.class
+                SearchCommand.class
         }
 )
 public class CommandLineApp implements Runnable {

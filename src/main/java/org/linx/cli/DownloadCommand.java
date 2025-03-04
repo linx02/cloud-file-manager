@@ -1,6 +1,7 @@
 package org.linx.cli;
 
 import org.linx.service.DatabaseService;
+import org.linx.service.S3Service;
 import picocli.CommandLine;
 
 import java.util.List;
@@ -9,6 +10,7 @@ import java.util.List;
 public class DownloadCommand implements Runnable {
 
     DatabaseService databaseService = new DatabaseService();
+    S3Service s3Service = new S3Service();
 
     @CommandLine.Option(names = {"-p" , "--project"}, required = true, description = "Project name")
     private String projectName;
@@ -31,8 +33,7 @@ public class DownloadCommand implements Runnable {
                 return;
             }
 
-            // IMPLEMENT ME
-            System.out.println("Downloading file " + fileName);
+            s3Service.downloadFile(fileName, projectName, System.getProperty("user.dir"));
 
         } catch (Exception e) {
             System.out.println("Error downloading file: " + e.getMessage());

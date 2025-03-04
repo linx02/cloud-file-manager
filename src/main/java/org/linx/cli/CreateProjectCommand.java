@@ -3,8 +3,6 @@ package org.linx.cli;
 import org.linx.service.DatabaseService;
 import picocli.CommandLine;
 
-import java.util.List;
-
 @CommandLine.Command(name = "create-project", description = "Create a new project")
 public class CreateProjectCommand implements Runnable {
 
@@ -20,6 +18,11 @@ public class CreateProjectCommand implements Runnable {
             return;
         }
 
-        System.out.println("Creating project " + projectName);
+        try {
+            databaseService.createProject(projectName);
+            System.out.println("Project created: " + projectName);
+        } catch (Exception e) {
+            System.out.println("Error creating project: " + e.getMessage());
+        }
     }
 }
