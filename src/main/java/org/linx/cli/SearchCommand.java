@@ -19,8 +19,8 @@ public class SearchCommand implements Runnable {
     @CommandLine.Option(names = {"-f", "--file"}, required = false, description = "File name")
     private String fileName;
 
-    @CommandLine.Option(names = {"-t", "--tags"}, required = false, split = ",", description = "Comma-separated tags")
-    private String[] tags;
+    @CommandLine.Option(names = {"-t", "--tag"}, required = false, description = "Tag to search for")
+    private String tag;
 
     @Override
     public void run() {
@@ -36,8 +36,8 @@ public class SearchCommand implements Runnable {
                 }
             }
 
-            if (tags != null) {
-                List<Map<String, AttributeValue>> tagResults = dynamoDBService.searchFilesByTags(Arrays.asList(tags));
+            if (tag != null) {
+                List<Map<String, AttributeValue>> tagResults = dynamoDBService.searchFilesByTags(tag);
                 if (!tagResults.isEmpty()) {
                     System.out.println("\nFound files by tags in DynamoDB:");
                     tagResults.forEach(this::printFileMetadata);
@@ -75,7 +75,7 @@ public class SearchCommand implements Runnable {
         System.out.println("File: " + fileMetadata.get("file_name").s());
         System.out.println("Project: " + fileMetadata.get("project_name").s());
         System.out.println("S3 URL: " + fileMetadata.get("s3_url").s());
-        System.out.println("Tags: " + fileMetadata.get("tags").ss());
+//        System.out.println("Tags: " + fileMetadata.get("tags").ss());
         System.out.println("Uploaded At: " + fileMetadata.get("uploaded_at").s());
         System.out.println("--------------------------------------------------");
     }

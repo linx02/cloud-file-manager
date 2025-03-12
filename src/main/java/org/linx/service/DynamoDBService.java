@@ -12,6 +12,7 @@ public class DynamoDBService {
 
     private final DynamoDbClient dynamoDB;
     private final String tableName;
+    private final String tagIndexName = "TagLookupIndex";
 
     public DynamoDBService() {
         Properties props = new Properties();
@@ -34,72 +35,63 @@ public class DynamoDBService {
     }
 
     public void saveFileMetadata(String fileName, String projectName, String s3Url, List<String> tags) {
-        Map<String, AttributeValue> item = new HashMap<>();
-        item.put("project_name", AttributeValue.builder().s(projectName).build());
-        item.put("file_name", AttributeValue.builder().s(fileName).build());
-        item.put("s3_url", AttributeValue.builder().s(s3Url).build());
-        item.put("uploaded_at", AttributeValue.builder().s(new Date().toString()).build());
-
-        if (tags != null && !tags.isEmpty()) {
-            Set<String> cleanedTags = new HashSet<>();
-            for (String tag : tags) {
-                cleanedTags.add(tag.trim());
-            }
-            item.put("tags", AttributeValue.builder().ss(cleanedTags).build());
-        } else {
-            item.put("tags", AttributeValue.builder().ss(Collections.singletonList("untagged")).build());
+        if (tags == null || tags.isEmpty()) {
+            tags = List.of("untagged");
         }
 
-        try {
-            dynamoDB.putItem(PutItemRequest.builder()
-                    .tableName(tableName)
-                    .item(item)
-                    .build());
-            System.out.println("File metadata stored in DynamoDB: " + fileName);
+        for (String tag : tags) {
+            Map<String, AttributeValue> item = new HashMap<>();
+            item.put("file_name", AttributeValue.builder().s(fileName).build());
+            item.put("project_name", AttributeValue.builder().s(projectName).build());
+            item.put("s3_url", AttributeValue.builder().s(s3Url).build());
+            item.put("tag", AttributeValue.builder().s(tag.trim()).build());
+            item.put("uploaded_at", AttributeValue.builder().s(new Date().toString()).build());
 
-        } catch (DynamoDbException e) {
-            System.err.println("Error storing file metadata in DynamoDB: " + e.getMessage());
-            e.printStackTrace();
+            try {
+                dynamoDB.putItem(PutItemRequest.builder()
+                        .tableName(tableName)
+                        .item(item)
+                        .build());
+                System.out.println("File metadata stored for tag: " + tag);
+
+            } catch (DynamoDbException e) {
+                System.err.println("Error storing file metadata: " + e.getMessage());
+                e.printStackTrace();
+            }
         }
     }
 
     public Map<String, AttributeValue> searchFileByName(String fileName) {
-        ScanRequest scanRequest = ScanRequest.builder()
+        QueryRequest queryRequest = QueryRequest.builder()
                 .tableName(tableName)
-                .filterExpression("file_name = :fileName")
+                .keyConditionExpression("file_name = :fileName")
                 .expressionAttributeValues(Map.of(
                         ":fileName", AttributeValue.builder().s(fileName).build()
                 ))
                 .build();
 
-        ScanResponse scanResponse = dynamoDB.scan(scanRequest);
-        if (!scanResponse.items().isEmpty()) {
-            return scanResponse.items().get(0);
+        QueryResponse queryResponse = dynamoDB.query(queryRequest);
+        if (!queryResponse.items().isEmpty()) {
+            return queryResponse.items().get(0);
         }
         return Collections.emptyMap();
     }
 
-    public List<Map<String, AttributeValue>> searchFilesByTags(List<String> tags) {
-        String filterExpression = "attribute_exists(tags)";
-        Map<String, AttributeValue> expressionValues = new HashMap<>();
-
-        for (int i = 0; i < tags.size(); i++) {
-            filterExpression += " AND contains(tags, :tag" + i + ")";
-            expressionValues.put(":tag" + i, AttributeValue.builder().s(tags.get(i).trim()).build());
-        }
-
-        ScanRequest scanRequest = ScanRequest.builder()
+    public List<Map<String, AttributeValue>> searchFilesByTags(String tag) {
+        QueryRequest queryRequest = QueryRequest.builder()
                 .tableName(tableName)
-                .filterExpression(filterExpression)
-                .expressionAttributeValues(expressionValues)
+                .indexName("TagLookupIndex")
+                .keyConditionExpression("tag = :tagValue")
+                .expressionAttributeValues(Map.of(
+                        ":tagValue", AttributeValue.builder().s(tag).build()
+                ))
                 .build();
 
-        ScanResponse scanResponse = dynamoDB.scan(scanRequest);
+        QueryResponse queryResponse = dynamoDB.query(queryRequest);
 
-        if (scanResponse.hasItems()) {
-            return scanResponse.items();
+        if (queryResponse.hasItems()) {
+            return queryResponse.items();
         }
-
         return new ArrayList<>();
     }
 }
